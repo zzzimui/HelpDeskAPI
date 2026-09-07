@@ -1,0 +1,19 @@
+# Python virtual environment
+.venv/
+
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+
+# Python generated files
+__pycache__/
+*.py[cod]
+
+# Local databases
+*.db
+
+# Local notes and scratch files
+app/txt/
+*.txt
+test.py
