@@ -6,10 +6,24 @@
 # 1. Imports the original base
 from app.database.base_class import Base  
 
-# 2. Import all application models here so that Alembic becomes aware of them
+from app.modules.categories.models import Category
+from app.modules.refresh_tokens.models import RefreshToken
+from app.modules.roles.models import Role
+from app.modules.ticket_history.models import TicketHistory
+from app.modules.ticket_messages.models import TicketMessage
+from app.modules.tickets.models import Ticket
 from app.modules.users.models import User
 
 
 # This explicitly states: "I am exporting these classes on purpose"
 # to avoid complaints that imported modules are not being used
-__all__ = ["Base", "User"]
+__all__ = [
+	"Base",
+	"Category",
+	"RefreshToken",
+	"Role",
+	"Ticket",
+	"TicketHistory",
+	"TicketMessage",
+	"User",
+]

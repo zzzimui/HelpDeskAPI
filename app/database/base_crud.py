@@ -1,14 +1,17 @@
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import apaginate
+
 from typing import Generic, TypeVar, Type, Any
 from pydantic import BaseModel
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, select
 
 from app.database.base_class import Base
 
 from sqlalchemy.exc import IntegrityError   
 from app.database.integrity import translate_integrity_error
-from app.exceptions.database import DatabaseAttributeError
+
 
 # Declaration of TypeVars for Generics
 ModelType = TypeVar("ModelType", bound=Base) # sqlalchemy model
@@ -26,52 +29,57 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """Stores the SQLAlchemy model class (e.g., User, Product) within the class instance (self.model)."""
         self.model = model
 
-    async def get(self, db: AsyncSession, target_column: str, attribute: str) -> ModelType | None:
-        """
-        What it does
-        -------------
-        Searches for a single record in the database based on an input 
-        column (target column) and checks whether that column contains 
-        a match for the provided attribute (attribute).
 
-        If found, returns a scalar result; otherwise, returns None.
+    async def get(
+        self, 
+        db: AsyncSession, 
+        id: str, 
+        extra_conditions: list[ColumnElement[bool]] | None = None
+    ) -> ModelType | None:
+        query = select(self.model)
 
-        Parameters
-        -------------
-        target_column (str)
-            e.g: `"id"`, `"email"`, `"username"`
-        
-        attribute (str)
-            e.g: `"1"`, `"user@example.com"`, `"some_username"`
+        # default condition
+        query = query.where(self.model.id == id)
 
-        Returns
-        -------------
-            ModelType | None
-        """
-        try:
-            column = getattr(self.model, target_column)
-        except AttributeError:
-            raise DatabaseAttributeError(
-                column=target_column, 
-                obj_name=self.model.__name__
-            )
+        if extra_conditions:
+            for condition in extra_conditions:
+                query = query.where(condition)
 
-        result = await db.execute(
-            select(self.model).where(column == attribute)
-        )
+        # criar try catch aqui
+        result = await db.execute(query)
+        # return result.scalar()
         return result.scalar_one_or_none()
 
-    async def get_multi(
-        self, db: AsyncSession, *, skip: int = 0, limit: int = 100
-    ) -> list[ModelType]:
-        """Returns a paginated list of records."""
-        result = await db.execute(
-            select(self.model).offset(skip).limit(limit)
-        )
 
-        # Takes the first element from each row of the SQL result and 
-        # returns a simple list of the entities
-        return list(result.scalars().all())
+    async def get_multi(
+        self,
+        db: AsyncSession,
+        *,
+        filters: dict[str, Any] | None = None,
+        extra_conditions: list[ColumnElement[bool]] | None = None,
+        page: int = 1,
+        limit: int = 100
+    ) -> Page[ModelType]:
+        """
+        Returns a paginated list by applying dynamic filters (dictionary)
+        and/or explicit SQLAlchemy conditions
+        """
+        query = select(self.model)
+
+        if extra_conditions:
+            for condition in extra_conditions:
+                query = query.where(condition)
+
+        if filters:
+            for field, value in filters.items():
+                if hasattr(self.model, field):
+                    query = query.where(getattr(self.model, field) == value)
+
+        return await apaginate(
+            db,
+            query,
+            params=Params(page=page, size=limit),
+        )
 
     async def create(
         self, db: AsyncSession, obj_in: CreateSchemaType
@@ -84,6 +92,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         # Instantiates the SQLAlchemy model by unpacking the dictionary
         db_obj = self.model(**obj_in_data)
 
+        
+        # Add a try-except block here later to raise database exceptions
         db.add(db_obj)
         await self.commit(db)
         await db.refresh(db_obj)

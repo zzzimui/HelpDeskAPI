@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi_pagination import add_pagination
 from app.core.exception_handlers import register_exception_handlers
 from app.api import api_router
 
@@ -15,3 +16,5 @@ register_exception_handlers(app)
 
 # Includes the module routers
 app.include_router(api_router)
+
+add_pagination(app)

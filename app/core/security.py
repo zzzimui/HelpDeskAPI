@@ -1,4 +1,6 @@
 import jwt
+import hashlib
+from uuid import UUID
 from fastapi.security import OAuth2PasswordBearer   
 
 from pwdlib import PasswordHash
@@ -20,9 +22,10 @@ password_hash = PasswordHash(
 
 # I need to find a way to make this dynamic
 reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_PREFIX}/auth/account/login"
+    tokenUrl=f"{settings.API_PREFIX}/auth/login"
 )
 
+REFRESH_SECRET_KEY = "changethis"
 ALGORITHM = "HS256"
 
 
@@ -39,3 +42,17 @@ def create_access_token(subject: str | Any, expires_delta: timedelta) -> str:
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+def create_refresh_token(
+    subject: str | Any,
+    expires_delta: timedelta,
+    token_id: UUID,
+) -> str:
+    expire = get_utc() + expires_delta
+    to_encode = {"exp": expire, "sub": str(subject), "jti": str(token_id)}
+    encoded_jwt = jwt.encode(to_encode, settings.REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()

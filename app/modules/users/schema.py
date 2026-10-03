@@ -6,7 +6,18 @@ class BaseUser(BaseModel):
     email: EmailStr = Field(max_length=255)
     password: str = Field(min_lenght=8, max_length=128)
 
-class UserCreate(BaseUser):
+    
+class UserFilter(BaseModel):
+    username: str | None = None
+    role_id: str | None = None
+
+    is_active: str | None = None
+    is_superuser: str | None = None
+    
+    created_at: str | None = None
+    modified_at: str | None = None 
+
+class UserCreate(BaseModel):
     """
     The model the user employs to create an account.
     Since the current database requires only an email and password,
@@ -14,17 +25,16 @@ class UserCreate(BaseUser):
     on the sign-up route.
     """
 
-    # email: EmailStr = Field(max_length=255)
-    # password: str = Field(min_lenght=8, max_length=128)
+    email: EmailStr = Field(max_length=255)
+    password: str = Field(min_lenght=8, max_length=128)
 
     display_name: str | None = Field(default=None, max_length=128)
     # username: str | None = Field(default=None, max_length=50)
-    
 
-class UserUpdate(UserCreate):
+class UserUpdate(BaseUser):
     email: EmailStr | None = Field(max_length=255)
-    username: str | None = Field(default=None, max_length=50)
     password: str | None = Field(min_lenght=8, max_length=128)
+    username: str | None = Field(default=None, max_length=50)
 
 class UserPublic(BaseModel):
     id: UUID
