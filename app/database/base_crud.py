@@ -45,9 +45,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             for condition in extra_conditions:
                 query = query.where(condition)
 
-        # criar try catch aqui
         result = await db.execute(query)
-        # return result.scalar()
         return result.scalar_one_or_none()
 
 
@@ -93,7 +91,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_obj = self.model(**obj_in_data)
 
         
-        # Add a try-except block here later to raise database exceptions
         db.add(db_obj)
         await self.commit(db)
         await db.refresh(db_obj)

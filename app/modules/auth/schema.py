@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel
 from uuid import UUID
 
 class Token(BaseModel):

@@ -5,8 +5,16 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.modules.tickets.models import Priority, TicketStatus
 
+class TicketUpdate(BaseModel):
+    title: str = Field(default=None, min_length=3, max_length=128)
+    description: str = Field(default=None, min_length=3)
+    status: TicketStatus | None = None
+    priority: Priority | None = None
+    category_id: UUID | None = None
+    assigned_agent_id: UUID | None = None
+
 class TicketFilter(BaseModel):
-    status: str | None = None
+    status: TicketStatus | None = None
     priority: str | None = None 
     category_id: UUID | None = None
     assigned_agent_id: str | None = None
@@ -29,20 +37,23 @@ class TicketPublic(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
 class TicketAgentUpdate(BaseModel):
-    status: str = Field()
-    priority: str = Field()
+    model_config = ConfigDict(extra="forbid")
+    
+    status: TicketStatus | None = None
+    priority: Priority | None = None
 
-class TicketUpdate(BaseModel):
-    title: str = Field()
-    description: str = Field()
+class TicketUserUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    
+    title: str = Field(default=None, min_length=3, max_length=128)
+    description: str = Field(default=None, min_length=3)
 
-class TicketAdminUpdate(TicketUpdate, TicketAgentUpdate):
-    category_id: str = Field()
-
+class TicketAdminUpdate(TicketUpdate):
+    model_config = ConfigDict(extra="forbid")
+    
 class TicketCreate(BaseModel):
-    title: str = Field(min_length=3, max_lenght=128)
+    title: str = Field(min_length=3, max_length=128)
     description: str = Field(min_length=3)
-    priority: Priority = Field(min_length=3)
+    priority: Priority
     category_id: UUID

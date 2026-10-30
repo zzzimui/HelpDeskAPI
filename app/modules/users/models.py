@@ -1,5 +1,5 @@
 from sqlalchemy import DateTime, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -26,6 +26,7 @@ class User(Base):
     modified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     role_id: Mapped[UUID] = mapped_column(ForeignKey("roles.id"), index=True, nullable=False)
+    role: Mapped[Role] = relationship()
 
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     is_superuser: Mapped[bool] = mapped_column(default=False, nullable=False)

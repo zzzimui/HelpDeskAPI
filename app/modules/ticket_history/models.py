@@ -1,15 +1,15 @@
+from enum import Enum
+from datetime import datetime
+from uuid import UUID
+
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy import DateTime, ForeignKey, DateTime, String
+from sqlalchemy import DateTime, ForeignKey, DateTime, String, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
-from datetime import datetime
-from uuid import UUID#, uuid4
-
-from app.modules.tickets.models import Ticket
+from app.modules.tickets.models import Ticket, TicketStatus
 from app.modules.users.models import User
 
 from app.database.base_class import Base
-# from app.utils.datetime import get_utc
 
 class TicketHistory(Base):
     __tablename__ = "ticket_history"

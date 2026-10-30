@@ -13,8 +13,8 @@ class Permissions(Enum):
     
 class Role(Base):
     """
-    Representa as permissões básicas do usuário.
-    - Um papel/role pode pertencer a vários usuários.
+    Represents basic user permissions.
+    - A role can belong to multiple users
     """
     __tablename__ = "roles"
     __table_args__ = (UniqueConstraint("permission", name="uq_roles_permission"),)

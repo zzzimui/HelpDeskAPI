@@ -9,8 +9,6 @@ from app.modules.users.models import User
 from app.modules.users.exceptions import InactiveUserError
 from app.modules.auth.exceptions import UnprivilegedUserError
 
-from app.utils.logger import log
-
 async def get_current_user(session: SessionDep, token: TokenDep) -> User:
     return await decode_token(session, token)
 

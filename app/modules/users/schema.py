@@ -4,7 +4,7 @@ from datetime import datetime
 
 class BaseUser(BaseModel):
     email: EmailStr = Field(max_length=255)
-    password: str = Field(min_lenght=8, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
 
     
 class UserFilter(BaseModel):
@@ -26,19 +26,19 @@ class UserCreate(BaseModel):
     """
 
     email: EmailStr = Field(max_length=255)
-    password: str = Field(min_lenght=8, max_length=128)
+    password: str = Field(max_length=128)
 
     display_name: str | None = Field(default=None, max_length=128)
     # username: str | None = Field(default=None, max_length=50)
 
 class UserUpdate(BaseUser):
     email: EmailStr | None = Field(max_length=255)
-    password: str | None = Field(min_lenght=8, max_length=128)
+    password: str | None = Field(max_length=128)
     username: str | None = Field(default=None, max_length=50)
 
 class UserPublic(BaseModel):
     id: UUID
     created_at: datetime | None = None
     
-    class Config:
+    class ConfigDict:
         from_attributes = True

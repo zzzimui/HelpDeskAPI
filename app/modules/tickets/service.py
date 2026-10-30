@@ -1,21 +1,23 @@
+from fastapi import HTTPException, status
 from typing import Dict, Set
 from fastapi_pagination import Page
+
+from copy import deepcopy
+
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import make_transient
+
 from uuid import UUID, uuid4
+from app.utils.datetime import get_naive_utc
 
 # ┌─────────────────────────────────────────────────────────────────┐
 # │  Exceptions                                                     │
 # └─────────────────────────────────────────────────────────────────┘
-from sqlalchemy.exc import DatabaseError
 from app.modules.users.exceptions import (
     InactiveUserError,
-    UnprivilegedUserError,
     InvalidTransitionError
 )
-from app.modules.tickets.exceptions import (
-    InvalidPermissionError, 
-    AppDatabaseError
-)
+from app.modules.tickets.exceptions import InvalidPermissionError
 
 # ┌─────────────────────────────────────────────────────────────────┐
 # │  Models                                                         │
@@ -26,16 +28,7 @@ from app.modules.tickets.models import Ticket, TicketStatus
 # ┌─────────────────────────────────────────────────────────────────┐
 # │  Schemes                                                        │
 # └─────────────────────────────────────────────────────────────────┘
-from app.modules.tickets.scheme import (
-    TicketCreate,
-    
-    TicketUpdate,
-    TicketAgentUpdate,
-    TicketAdminUpdate,
-    
-    TicketPublic,
-    TicketFilter
-)
+from app.modules.tickets.schema import TicketCreate, TicketFilter
 
 # ┌─────────────────────────────────────────────────────────────────┐
 # │  Crud                                                           │
@@ -47,12 +40,14 @@ from app.modules.tickets.crud import crud_ticket
 # │  Services                                                       │
 # └─────────────────────────────────────────────────────────────────┘
 from app.modules.users.service import read_user
-from app.modules.categories.service import get_category_by_id
+from app.modules.categories.service import get_category_or_404
 from app.modules.roles.service import get_role
+from app.modules.ticket_history.service import generate_ticket_event
 
 
-
-
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  Global                                                         │
+# └─────────────────────────────────────────────────────────────────┘
 # Status transitions allowed
 TRANSITIONS: Dict[TicketStatus, Set[TicketStatus]] = {
     TicketStatus.OPEN:        {TicketStatus.IN_PROGRESS},
@@ -62,13 +57,52 @@ TRANSITIONS: Dict[TicketStatus, Set[TicketStatus]] = {
 }
 
 
-# region HELPER
-# ── create functions ──────────────────────────────────────────────────────────────
 
-# async def ...
+# region Helper
+# ── helper functions ──────────────────────────────────────────────────────────────
 
-# ── END of helper functions ──────────────────────────────────────────────────────────────
+def _snapshot_ticket(ticket: Ticket) -> dict:
+    copy = deepcopy(ticket)
+    make_transient(copy)   # removes the link with the Session
+    return copy
 
+
+async def _validate_update_requirements(
+    db: AsyncSession, 
+    user: User, 
+    schema: dict,
+    ticket: Ticket
+) -> None:
+    # Is the customer's ticket open for modification?
+    if user.role.permission.name == "CUSTOMER" and ticket.status.name != "OPEN":
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"message": f"Only open tickets can be updated by customers"}
+        )
+
+    # Is the user trying to change the category?
+    # If so, does this category exist?
+    category_id = schema.get("category_id")
+    if category_id:
+        await get_category_or_404(db, category_id)
+
+
+async def _update_current_ticket_state(
+    db: AsyncSession, 
+    user: User, 
+    schema: dict,
+    ticket_id: UUID
+):
+    target_status = schema.get("status")
+    if target_status:
+        await change_status(db, user, ticket_id, target_status)
+
+    assigned_agent = schema.get("assigned_agent")
+    if assigned_agent:
+        await assign_agent(db, user, ticket_id, assigned_agent)
+
+
+# ── END OF helper functions ──────────────────────────────────────────────────────────────
 
 
 
@@ -76,31 +110,41 @@ TRANSITIONS: Dict[TicketStatus, Set[TicketStatus]] = {
 # ── create functions ──────────────────────────────────────────────────────────────
 
 async def generate_ticket(
-        db: AsyncSession, 
-        user: User, 
-        ticket: TicketCreate,
-    ):
-    # Precondition to ensure that the category exists
-    await get_category_by_id(db, ticket.category_id)
+    db: AsyncSession, 
+    user: User, 
+    ticket: TicketCreate,
+):
+    # Precondition to ensure the ticket category exists
+    await get_category_or_404(db, ticket.category_id)
 
-    user_role = await get_role(db, role_id=user.role_id)
-    user_permission = user_role.permission.name
-
-    if not user_permission is "CUSTOMER":
-        raise InvalidPermissionError(permission=user_permission)
+    role_user = await get_role(db, user.role_id)
+    if not role_user.permission.name == "CUSTOMER":
+        raise InvalidPermissionError(permission=role_user.permission.name)
 
     obj_data = ticket.model_dump()
-
     obj_data["id"] = uuid4()
-    # Needs be an authenticated user
     obj_data["customer_id"] = user.id
     # The initial status must be open
     obj_data["status"] = "OPEN"
 
-    try:
-        await crud_ticket.create_ticket(db, obj_in_data=obj_data)
-    except DatabaseError:
-        raise AppDatabaseError()
+    await crud_ticket.create_ticket(db, obj_in_data=obj_data)
+
+    # await generate_ticket_event(
+    #     db,
+    #     user,
+    #     ticket_id=obj_data.get("id"),
+    #     action="CREATED",
+    #     current_ticket_state={"status": None},
+    #     new_state={"status": "OPEN"}
+    # )
+    await generate_ticket_event(
+        db,
+        user,
+        ticket_id=obj_data["id"],
+        action="CREATED",
+        current_ticket=None,
+        new_state={"status": "OPEN"},
+    )
 
     return {"Message": "The ticket was successfully created!"}
 
@@ -110,11 +154,11 @@ async def generate_ticket(
 # region READ
 # ── read functions ──────────────────────────────────────────────────────────────
 
-async def get_ticket(
-        db: AsyncSession, 
-        user: User,
-        ticket_id: str
-    ) -> TicketPublic:
+async def get_ticket_or_404(
+    db: AsyncSession, 
+    user: User,
+    ticket_id: str
+) -> Ticket:
     """
     Gets a specific ticket based on its ID.
     """
@@ -127,19 +171,26 @@ async def get_ticket(
     elif role_user.permission.name == "AGENT":
         queries.append(crud_ticket.model.assigned_agent_id == user.id)
 
-    return await crud_ticket.get(
+    ticket = await crud_ticket.get(
         db,
         ticket_id,
         extra_conditions=queries or None
     )
+    if ticket is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found; Verify whether the provided ticket belongs to the authenticated user",
+        )
 
-async def get_tickets(
-        db: AsyncSession, 
-        user: User,
-        filter: TicketFilter,
-        page: int = 1,
-        limit: int = 100
-    ) -> Page[Ticket]:
+    return ticket
+
+async def list_tickets(
+    db: AsyncSession, 
+    user: User,
+    filter: TicketFilter,
+    page: int = 1,
+    limit: int = 100
+) -> Page[Ticket]:
     role_user = await get_role(db, user.role_id)
 
     queries = []
@@ -173,68 +224,121 @@ async def get_tickets(
 async def update_ticket(
     db: AsyncSession, 
     user: User, 
-    updated_ticket: TicketUpdate,
-    agent_ticket: TicketAgentUpdate,
-    admin_ticket: TicketAdminUpdate,
+    schema: dict,
     ticket_id: str
 ) -> Ticket:
-    # CUSTOMER
-    # Pode alterar determinadas informações enquanto o ticket estiver OPEN.
-    role_user = await get_role(db, user.role_id)
-    ticket = await get_ticket(db, user, ticket_id)
+    # Does the target ticket exist?
+    target_ticket = await get_ticket_or_404(db, user, ticket_id)
 
-    # customer
-    if ticket.status.name == "OPEN" and role_user.permission.name == "CUSTOMER":
-        return await crud_ticket.update(db, db_obj=updated_ticket)
-    # agent
-    elif role_user.permission.name == "AGENT":
-        return await crud_ticket.update(db, db_obj=agent_ticket)
+    # Does the request meet all the requirements?
+    await _validate_update_requirements(
+        db, 
+        user,
+        schema=schema,
+        ticket=target_ticket
+    )
 
-    # admin
-    return await crud_ticket.update(db, db_obj=admin_ticket)
+    # preserves the current state of the ticket 
+    # while the actual ticket is subsequently updated
+    old_snapshot: Ticket = _snapshot_ticket(target_ticket)
+
+    # records the updates in the database
+    await _update_current_ticket_state(
+        db,
+        user,
+        schema,
+        ticket_id=target_ticket.id
+    )
+
+    # Finally:
+    await generate_ticket_event(
+        db,
+        user,
+        ticket_id=target_ticket.id,
+        # action
+        action="UPDATED",
+        current_ticket=old_snapshot,
+        new_state=schema
+    )
+
+    schema["updated_at"] = get_naive_utc()
+    updated_ticket = await crud_ticket.update(db, db_obj=target_ticket, obj_in=schema)
+
+    return updated_ticket
 
     
 
 async def assign_agent(
     db: AsyncSession,
     admin_user: User, 
-    ticket_id: str,
-    agent_id: str
+    ticket_id: UUID,
+    agent_id: UUID
 ):
-    # agent_id pertence a um usuário?
+    """
+    Assigns a ticket to an agent
+    """
+
+    # Does the provided agent_id belong to a user?
     target_agent: User = await read_user(db, agent_id)
 
+    # Is it active?
     if target_agent.is_active is False:
         raise InactiveUserError()
 
+    # Does it act as an agent?
     agent_role = await get_role(db, target_agent.role_id)
     if not agent_role.permission.name == "AGENT":
         raise InvalidPermissionError(agent_role.permission.name)
 
-    target_ticket = await get_ticket(db, admin_user, ticket_id)
-    
-    updated_ticket = {
-        "assigned_agent_id": agent_id
-    }
+    # If so...
+    target_ticket = await get_ticket_or_404(db, admin_user, ticket_id)
+    updated_ticket = await crud_ticket.update(
+        db, 
+        db_obj=target_ticket, 
+        obj_in={"assigned_agent_id": agent_id}
+    )
 
-    return await crud_ticket.update(db, db_obj=target_ticket, obj_in=updated_ticket)
+    # Finally:
+    await generate_ticket_event(
+        db,
+        user=admin_user,
+        ticket_id=updated_ticket.id,
+        action="ASSIGNED",
+        current_ticket_state={"assigned_agent_id": target_ticket.assigned_agent_id},
+        new_state={"assigned_agent_id": agent_id}
+    )
+
+    return updated_ticket
 
 
 async def change_status(
     db: AsyncSession, 
-    agent: User, 
+    user: User, 
     ticket_id: UUID,
     target_status: TicketStatus
 ) -> Ticket:
-    current_ticket: Ticket = await get_ticket(db, agent, ticket_id)
+    current_ticket: Ticket = await get_ticket_or_404(db, user, ticket_id)
 
-    # Verifies whether the transition requested by the agent is valid
+    # Is the transition via the agent valid?
     if not target_status in TRANSITIONS.get(current_ticket.status, set()):
-        raise InvalidTransitionError(current_ticket.status.value, target_status.value)
+        raise InvalidTransitionError(current_ticket.status.value, target_status)
 
+    # If so...
     ticket_updated = {"status": target_status}
-    
-    return await crud_ticket.update(db, db_obj=current_ticket, obj_in=ticket_updated)
+
+    if target_status.value == "open" or target_status.value == "in_progress":
+        ticket_updated["resolved_at"] = None
+        ticket_updated["closed_at"] = None
+    elif target_status.value == "resolved":
+        ticket_updated["resolved_at"] = get_naive_utc()
+        ticket_updated["closed_at"] = None
+    elif target_status.value == "closed":
+        ticket_updated["closed_at"] = get_naive_utc()
+
+    ticket_updated["updated_at"] = get_naive_utc()
+
+    updated_ticket = await crud_ticket.update(db, db_obj=current_ticket, obj_in=ticket_updated)
+    return updated_ticket
 
 # ── END of update functions ──────────────────────────────────────────────────────────────
 

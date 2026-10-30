@@ -1,57 +1,138 @@
-## Migrações do banco
+# Help Desk API
 
-As migrações usam PostgreSQL e a URL definida no arquivo `.env` (`DATABASE_URL`).
-Execute os comandos a partir da raiz do projeto.
+API REST para gerenciamento de chamados de suporte técnico, desenvolvida com Python e FastAPI. O projeto busca aplicar boas práticas de desenvolvimento backend, organização por módulos, persistência relacional e testes automatizados.
 
-### Primeira migração
+## Tecnologias
 
-Para criar o banco de teste do zero, remova o schema atual e aplique o baseline:
+- **Python 3.12+**
+- **FastAPI** — construção da API REST
+- **SQLAlchemy 2.0** — ORM com suporte assíncrono
+- **PostgreSQL** — banco de dados relacional
+- **Alembic** — gerenciamento de migrations
+- **Pydantic** — validação e estruturação de dados
+- **JWT** — autenticação baseada em tokens
+- **pwdlib** — hashing de senhas
+- **pytest** — testes automatizados
+- **pytest-cov** — análise de cobertura de testes
+- **uv** — gerenciamento de dependências
+- **Docker** — suporte ao ambiente de desenvolvimento e testes
+- **GitHub Actions** — execução automatizada de testes em CI
 
-```powershell
+## Funcionalidades
+
+### Autenticação e usuários
+- Login com autenticação baseada em JWT.
+- Geração de access tokens.
+- Renovação de tokens por meio de refresh tokens.
+- Logout e gerenciamento de refresh tokens.
+- Hashing seguro de senhas.
+- Gerenciamento de usuários e permissões.
+
+### Gerenciamento de chamados
+- Criação e atualização de chamados.
+- Consulta e listagem de chamados.
+- Controle de status com validação de transições permitidas.
+- Atribuição de chamados a agentes de suporte.
+- Categorização de chamados.
+- Controle de acesso aos chamados conforme usuário e função.
+
+### Categorias e mensagens
+- Criação e gerenciamento de categorias.
+- Envio e consulta de mensagens associadas aos chamados.
+
+### Histórico e auditoria
+- Registro de eventos relacionados aos chamados.
+- Armazenamento de alterações para acompanhamento do histórico.
+
+
+## Arquitetura
+
+O projeto utiliza uma organização modular, separando responsabilidades entre rotas, serviços, modelos, schemas e operações de persistência.
+
+- **Routers:** definem os endpoints HTTP.
+- **Services:** concentram as regras de negócio.
+- **CRUD:** encapsula operações de acesso e manipulação dos dados.
+- **Models:** representam as entidades persistidas no banco.
+- **Schemas:** definem os formatos de entrada e saída e a validação dos dados.
+- **Migrations:** controlam a evolução do esquema do banco de dados.
+
+## Requisitos
+
+- Python 3.12 ou superior.
+- [uv](https://docs.astral.sh/uv/).
+- PostgreSQL acessível pela aplicação.
+- Docker, caso seja utilizado para executar o banco de dados ou os testes de integração.
+
+## Instalação
+
+Clone o repositório:
+
+```bash
+git clone https://github.com/zzzimui/HelpDeskAPI
+cd HelpDeskAPI
+```
+
+Instale as dependências usando o arquivo de lock:
+
+```bash
+uv sync --locked
+```
+
+Configure a variável de ambiente `DATABASE_URL` com a URL de conexão do PostgreSQL, conforme a configuração utilizada pela aplicação.
+
+Exemplo:
+
+```env
+DATABASE_URL=postgresql+asyncpg://usuario:senha@localhost:5432/helpdesk
+```
+
+> Substitua os valores de exemplo pelas credenciais e pelo banco configurados no seu ambiente. Não versione senhas ou chaves secretas no repositório.
+
+## Banco de dados
+
+Após configurar a conexão, aplique as migrations:
+
+```bash
 uv run alembic upgrade head
 ```
 
-O baseline atual está em `alembic/versions/2ef7d51b9bf7_create_initial_schema.py` e cria todas as tabelas, enums, chaves estrangeiras e índices definidos pelos modelos SQLAlchemy.
+## Executando a aplicação
 
-Se o banco de teste já tiver tabelas ou um histórico antigo, recrie o schema antes:
+Inicie o servidor de desenvolvimento:
 
-```sql
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
+```bash
+uv run uvicorn app.main:app --reload
 ```
 
-Depois execute novamente `uv run alembic upgrade head`.
+A documentação interativa da API fica disponível, por padrão, em:
 
-### Consultar o estado
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
 
-```powershell
-uv run alembic current
-uv run alembic heads
-uv run alembic history --verbose
-uv run alembic check
+## Testes
+
+Execute a suíte de testes:
+
+```bash
+uv run pytest tests/ -v
 ```
 
-### Criar e aplicar upgrades
+Para executar os testes com relatório de cobertura:
 
-Após alterar um modelo:
-
-```powershell
-uv run alembic revision --autogenerate -m "descreva a alteracao"
-uv run alembic upgrade head
+```bash
+uv run pytest tests/ -v --cov=app --cov-report=term-missing
 ```
 
-Revise o arquivo gerado antes de aplicar, especialmente alterações de colunas `NOT NULL`, enums, chaves estrangeiras e dados existentes.
+A suíte atual contém testes unitários, testes de integração e testes relacionados à persistência e às regras de negócio.
 
-Para voltar uma revisão:
+## Integração contínua
 
-```powershell
-uv run alembic downgrade -1
-```
+O projeto possui um workflow de GitHub Actions para executar os testes automaticamente em eventos de `push` e `pull_request`, utilizando um serviço PostgreSQL temporário.
 
-`alembic stamp` altera somente o marcador de versão e não executa alterações no schema. Não use `stamp` para substituir `upgrade`, exceto quando o schema já tiver sido conferido manualmente.
+## Objetivo do projeto
 
+Este projeto foi desenvolvido como parte do meu portfólio de estudos em desenvolvimento backend com Python, com foco em construção de APIs REST, modelagem relacional, regras de negócio, autenticação, testes automatizados e organização de código.
 
-### Execute o código abaixo para criar a seed inicial de categorias
-```powershell
-uv run alembic upgrade head
-```
+## Licença
+
+Este projeto está licenciado sob a licença MIT. Consulte o arquivo [LICENSE](LICENSE).

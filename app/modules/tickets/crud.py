@@ -1,9 +1,8 @@
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.tickets.models import Ticket
 from app.database.base_crud import CRUDBase
-from app.modules.tickets.scheme import(
+from app.modules.tickets.schema import(
     TicketCreate, 
     TicketUpdate,
 )

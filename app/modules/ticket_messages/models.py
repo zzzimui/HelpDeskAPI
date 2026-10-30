@@ -13,7 +13,7 @@ from app.utils.datetime import get_utc
 
 class TicketMessage(Base):
     """
-    Representa uma mensagem dentro do chamado
+    Represents a message within the ticket.
     """
     __tablename__ = "ticket_messages"
 

@@ -1,3 +1,4 @@
+from fastapi_pagination import Page
 from app.utils import datetime
 from app.core import security 
 
@@ -79,19 +80,20 @@ async def read_user(db: AsyncSession, user_id: str) -> User:
     """
     return await get_or_404(db, user_id)
 
-async def read_all_users(
+async def read_users(
     session: AsyncSession,
     *,
     filter: UserFilter,
     page: int = 1,
     limit: int = 100
-) -> list:
+) -> Page[User]:
     selected_filter = filter.model_dump(exclude_none=True)
+
     return await crud_user.get_multi(
-        session, 
+        session,
         filters=selected_filter,
         page=page,
-        limit=limit, 
+        limit=limit
     )
 
 # ── END of read functions ──────────────────────────────────────────────────────────────

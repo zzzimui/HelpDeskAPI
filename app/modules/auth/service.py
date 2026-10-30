@@ -14,6 +14,7 @@ from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from app.modules.auth.exceptions import InvalidCredentialsError
 from app.modules.users.exceptions import UserNotFoundError, InactiveUserError 
+from sqlalchemy.orm import selectinload
 
 
 async def decode_token(session: SessionDep, token: TokenDep) -> User:
@@ -36,7 +37,7 @@ async def decode_token(session: SessionDep, token: TokenDep) -> User:
     if user_id is None:
         raise InvalidCredentialsError()
 
-    user = await session.get(User, user_id)
+    user = await session.get(User, user_id, options=[selectinload(User.role)])
 
     if not user:
         raise UserNotFoundError()

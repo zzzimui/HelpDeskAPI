@@ -1,14 +1,32 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
+from uuid import UUID
 
-# class CategoryDelete(BaseModel):
-#     is_active: bool
-    
-class CategoryCreate(BaseModel):
-    name: str = Field(min_length=1, max_lenght=32)
-    description: str = Field(min_length=8, max_lenght=1000)
+from pydantic import BaseModel, ConfigDict, Field
 
-class CategoryUpdate(CategoryCreate):
-    ...
+
+class CategoryBase(BaseModel):
+    name: str = Field(min_length=1, max_length=32)
+    description: str = Field(min_length=8, max_length=1000)
+
+
+class CategoryCreate(CategoryBase):
+    pass
+
+
+class CategoryUpdate(CategoryBase):
+    pass
+
 
 class CategoryRemove(BaseModel):
-    is_deleted: str
+    is_deleted: bool
+
+
+class CategoryPublic(BaseModel):
+    id: UUID
+    name: str
+    description: str
+    is_active: bool
+    is_deleted: bool
+    created_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)

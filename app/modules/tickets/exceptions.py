@@ -1,9 +1,9 @@
 from app.exceptions.base import AppModuleException
 
 class AppDatabaseError(AppModuleException):
-    def __init__(self):
+    def __init__(self, action: str):
         super().__init__(
-            message = "There was a database error", 
+            message = f"A database error occurred {action}.", # eg. while attempting to create a ticket
             status_code = 500, 
             code = "INTERNAL_SERVER_ERROR"
         )

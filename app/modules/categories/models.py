@@ -9,15 +9,6 @@ from app.utils.datetime import get_utc
 
 
 class Category(Base):
-    """
-    Representa a categoria do chamado. Exemplo:
-    - Hardware
-    = Software
-    = Rede
-    - Conta
-    - Financeiro
-    - Outro
-    """
     __tablename__ = "categories"
 
     id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True, nullable=False)

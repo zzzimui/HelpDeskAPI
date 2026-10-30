@@ -1,5 +1,6 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends
+from fastapi_pagination import Page
 
 from app.modules.users import service
 from app.modules.users.schema import UserPublic, UserUpdate, UserFilter
@@ -27,7 +28,7 @@ async def read_me(
 @router.get(
     "/",
     summary="List all users (admin function)",
-    response_model=UserPublic, 
+    response_model=Page[UserPublic],
     status_code=200,
     # include_in_schema=False
 )
@@ -38,11 +39,11 @@ async def list_all_users(
     page: int = 1,
     limit: int = 100
 ):
-    return await service.read_all_users(
+    return await service.read_users(
         session,
-        filter,
-        page,
-        limit
+        filter=filter,
+        page=page,
+        limit=limit
     )
 
 
@@ -103,7 +104,7 @@ async def get_user_by_id(
 )
 async def change_role(
     session: SessionDep,
-    # user: CurrentActiveUser,
+    user: CurrentSuperuser,
     user_id: UUID,
     new_permission: str
 ):
@@ -118,7 +119,7 @@ async def change_role(
 )
 async def change_user_status(
     session: SessionDep,
-    # user: CurrentSuperuser,
+    user: CurrentSuperuser,
     user_id: str,
     status: str
 ) -> dict:

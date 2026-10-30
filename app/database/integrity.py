@@ -33,5 +33,5 @@ def translate_integrity_error(
         )
 
     return DatabaseIntegrityError(
-        message="O banco de dados rejeitou a operação.",
+        message="The database rejected the operation",
     )

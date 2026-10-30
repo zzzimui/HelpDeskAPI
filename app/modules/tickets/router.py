@@ -1,12 +1,37 @@
+from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    HTTPException,
+    status
+)
 from fastapi_pagination import Page
 
-from app.modules.tickets import service
-from app.modules.tickets.models import Ticket, TicketStatus
-from app.modules.tickets.scheme import (
+
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  Exceptions                                                     │
+# └─────────────────────────────────────────────────────────────────┘
+from pydantic import ValidationError
+
+
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  Models                                                         │
+# └─────────────────────────────────────────────────────────────────┘
+from app.modules.tickets.models import TicketStatus
+
+
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  Schemes                                                        │
+# └─────────────────────────────────────────────────────────────────┘
+from app.modules.ticket_messages.scheme import (
+    TicketMessageCreate,
+    TicketMessagePublic
+)
+from app.modules.tickets.schema import (
     TicketCreate,
-    TicketUpdate, 
+    TicketUserUpdate,
     TicketAgentUpdate,
     TicketAdminUpdate,
     TicketFilter,
@@ -14,15 +39,38 @@ from app.modules.tickets.scheme import (
     TicketStatus
 )
 
+
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  Services                                                       │
+# └─────────────────────────────────────────────────────────────────┘
+from app.modules.tickets import service
+from app.modules.ticket_messages.service import(
+    generate_message,
+    list_messages
+)
+
+
+# ┌─────────────────────────────────────────────────────────────────┐
+# │  Deps                                                           │
+# └─────────────────────────────────────────────────────────────────┘
 from app.core.deps import SessionDep
 from app.modules.auth.deps import CurrentActiveUser, CurrentSuperuser
 
+
+
+
 router = APIRouter()
+
+ROLE_TO_SCHEMA = {
+    "CUSTOMER": TicketUserUpdate,
+    "AGENT":    TicketAgentUpdate,
+    "ADMIN":    TicketAdminUpdate,
+}
 
 
 # region Static
 
-# ── GET ──────────────────────────────────────────────────────────────
+# ── GET Static ──────────────────────────────────────────────────────────────
 
 @router.get("/", response_model=Page[TicketPublic])
 async def list_tickets(
@@ -32,7 +80,7 @@ async def list_tickets(
     page: int = 1,
     limit: int = 100
 ):
-    return await service.get_tickets(
+    return await service.list_tickets(
         session, 
         user,
         filter,
@@ -40,8 +88,8 @@ async def list_tickets(
         limit
     )
 
-# ── POST ──────────────────────────────────────────────────────────────
 
+# ── POST Static ──────────────────────────────────────────────────────────────
 
 @router.post("/")
 async def create_ticket(
@@ -52,48 +100,127 @@ async def create_ticket(
     return await service.generate_ticket(session, user, ticket)
 
 
-
 # region Dynamic
 
-# ── GET ──────────────────────────────────────────────────────────────
+# ── GET Dynamic ──────────────────────────────────────────────────────────────
 
 @router.get("/{ticket_id}", response_model=TicketPublic)
-async def get_ticket(
+async def get_ticket_or_404(
     session: SessionDep,
     user: CurrentActiveUser,
-    ticket_id: str,
+    ticket_id: UUID,
 ):
-    return await service.get_ticket(
+    return await service.get_ticket_or_404(
         session, 
         user,
         ticket_id,
     )
 
 
-# ── PATCH ──────────────────────────────────────────────────────────────
+@router.get("/{ticket_id}/messages", response_model=Page[TicketMessagePublic])
+async def list_ticket_messages(
+    session: SessionDep,
+    user: CurrentActiveUser,
+    ticket_id: UUID,
+    page: int = 1,
+    limit: int = 100
+):
+    return await list_messages(
+        session,
+        user,
+        ticket_id,
+        page,
+        limit
+    )
+
+
+# ── POST Dynamic ──────────────────────────────────────────────────────────────
+
+@router.post("/{ticket_id}/messages", response_model=TicketMessagePublic)
+async def create_ticket_message(
+    session: SessionDep,
+    user: CurrentActiveUser,
+    ticket_id: UUID,
+    content: TicketMessageCreate
+):
+    return await generate_message(
+        session,
+        user,
+        ticket_id,
+        content, 
+    )
+
+
+# ── PATCH Dynamic ──────────────────────────────────────────────────────────────
 
 @router.patch("/{ticket_id}", response_model=TicketPublic)
 async def update_ticket(
     session: SessionDep,
     user: CurrentActiveUser,
-    updated_ticket: TicketUpdate,
-    agent_ticket: TicketAgentUpdate,
-    admin_ticket: TicketAdminUpdate,
-    ticket_id: str,
+    ticket_id: UUID,
+    payload: Annotated[
+        TicketUserUpdate | TicketAgentUpdate | TicketAdminUpdate,
+        Body(
+            openapi_examples={
+                "User": {
+                    "summary": "Customer-editable fields",
+                    "value": {"title": "...", "description": "..."}
+                },
+                "Agent": {
+                    "summary": "Agent-editable fields",
+                    "value": {"priority": "low", "status": "open"}
+                },
+                "Admin": {
+                    "summary": "Admin-editable fields",
+                    "value": {
+                        "title": "...",
+                        "description": "...",
+                        "status": "open",
+                        "priority": "low",
+                        "category_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                        "assigned_agent_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    }
+                }
+            }
+        )
+    ],
 ):
-    return await service.update_ticket(
-        session, 
-        user,
-        updated_ticket,
-        ticket_id,
-    )
+
+    # Is the client trying to send an empty payload?
+    payload_data = payload.model_dump(exclude_unset=True)
+    if not payload_data:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"message": "At least one field must be provided"},
+        )
+
+    # Does the client have the privilege to modify the requested resource?
+    schema_cls = ROLE_TO_SCHEMA.get(user.role.permission.name)
+    if schema_cls is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Role not allowed")
+
+    # Revalidates the raw payload against the user role schema
+    # here, forbidden fields are effectively rejected
+    try:
+        schema = schema_cls.model_validate(payload_data)
+    except ValidationError as e:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": "Fields not permitted for your role",
+                "errors": e.errors(include_input=False),
+            },
+        )
+
+    return await service.update_ticket(session, user, schema.model_dump(exclude_unset=True), ticket_id)
+
 
 @router.patch("/{ticket_id}/assign", response_model=TicketPublic)
 async def assign_agent(
     session: SessionDep,
     user: CurrentSuperuser,
-    ticket_id: str,
-    agent_id: str
+    ticket_id: UUID,
+    agent_id: UUID
 ):
     """
     Admin function:

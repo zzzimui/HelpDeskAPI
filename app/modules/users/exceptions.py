@@ -1,5 +1,6 @@
 from app.exceptions.base import AppModuleException
 
+
 class InvalidTransitionError(AppModuleException):
     def __init__(self, current_status: str, target_status: str):
         super().__init__(
