@@ -144,9 +144,6 @@ async def change_user_role(
 async def update_user(session: AsyncSession, user: User, update_schema: UserUpdate):
     user_data = update_schema.model_dump(exclude_unset=True)
 
-    # if "username" in user_data:
-    #     new_username = user_data.get("email")
-    #     await duplicate_username_checker(username)
     if "email" in user_data:
         new_email = user_data.get("email")
         await duplicate_email_checker(session, new_email)

@@ -33,7 +33,6 @@ from app.modules.ticket_messages.crud import crud_ticket_message
 
 
 
-
 async def list_messages(
     db: AsyncSession,
     user: User,

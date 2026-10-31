@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from app.database.migrations import Base
 from app.modules.categories.models import Category
 from app.modules.roles.models import Permissions, Role
 from app.modules.users.models import User
@@ -19,26 +18,24 @@ from app.modules.users.models import User
 
 @pytest.fixture(scope="session")
 def test_database_url() -> str:
-    """Obtém e valida a URL exclusiva do banco de testes."""
+    """Obtain and validate the unique testbed URL"""
     url = os.getenv("TEST_DATABASE_URL")
 
     if not url:
         pytest.fail(
-            "Defina TEST_DATABASE_URL para executar os testes "
-            "de integração."
+            "Define TEST_DATABASE_URL to run integration tests"
         )
 
     parsed_url = make_url(url)
 
     if parsed_url.database != "helpdesk_test":
         pytest.fail(
-            "Os testes de integração só podem usar "
-            "o banco helpdesk_test."
+            "Integration tests can only use the helpdesk_test database."
         )
 
     if parsed_url.drivername != "postgresql+asyncpg":
         pytest.fail(
-            "TEST_DATABASE_URL deve usar postgresql+asyncpg."
+            "TEST_DATABASE_URL must use postgresql+asyncpg."
         )
 
     return url
@@ -48,7 +45,7 @@ def test_database_url() -> str:
 async def db_session(
     test_database_url: str,
 ) -> AsyncGenerator[AsyncSession, None]:
-    """Fornece uma sessão isolada por teste, com rollback."""
+    """Provides one isolated session per test, with rollback"""
     engine = create_async_engine(
         test_database_url,
         echo=False,
@@ -80,7 +77,7 @@ async def db_session(
 async def customer_role(
     db_session: AsyncSession,
 ) -> Role:
-    """Obtém o papel CUSTOMER criado pela migração."""
+    """Gets the CLIENT role created by the migration"""
     result = await db_session.execute(
         select(Role).where(
             Role.permission == Permissions.CUSTOMER
@@ -90,8 +87,8 @@ async def customer_role(
 
     if role is None:
         pytest.fail(
-            "O papel CUSTOMER não existe. "
-            "Verifique a migração de papéis iniciais."
+            "The CUSTOMER role does not exist. "
+            "Check home role migration."
         )
 
     return role
@@ -102,7 +99,7 @@ async def customer_user(
     db_session: AsyncSession,
     customer_role: Role,
 ) -> User:
-    """Cria um usuário de teste associado a CUSTOMER."""
+    """Create a test user associated with the client"""
     user = User(
         id=uuid4(),
         email=f"customer-{uuid4().hex}@example.com",
@@ -122,7 +119,7 @@ async def customer_user(
 async def hardware_category(
     db_session: AsyncSession,
 ) -> Category:
-    """Obtém a categoria Hardware criada pela migração."""
+    """Gets the Hardware category created by the migration"""
     result = await db_session.execute(
         select(Category).where(
             Category.name == "Hardware"
@@ -132,8 +129,8 @@ async def hardware_category(
 
     if category is None:
         pytest.fail(
-            "A categoria Hardware não existe. "
-            "Verifique as migrações iniciais."
+            "The Hardware category does not exist."
+            "Check initial migrations."
         )
 
     return category

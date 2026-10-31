@@ -21,8 +21,5 @@ class CRUDTicket(CRUDBase[Ticket, TicketCreate, TicketUpdate]):
         await db.refresh(db_obj)
         return db_obj
 
-    
-
-
 
 crud_ticket = CRUDTicket(Ticket)

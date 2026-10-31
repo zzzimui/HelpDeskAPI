@@ -14,8 +14,6 @@ api_router.include_router(users_router, prefix="/users", tags=["Users"])
 api_router.include_router(tickets_router, prefix="/tickets", tags=["Tickets"])
 api_router.include_router(categories_router, prefix="/categories", tags=["Categories"])
 
-
+# Pending
 if settings.ENVIRONMENT == "local":
     pass
-    # from app.modules.users.private_router import 
-    # api_router.include_router(private.router, prefix="/users", tags=["Users"])

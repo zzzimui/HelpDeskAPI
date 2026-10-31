@@ -14,11 +14,6 @@ async def get_or_404(session: AsyncSession, role_id: UUID) -> Role:
 
 
 async def get_role(session: AsyncSession, role_id: UUID) -> Role:
-    """
-    Quando já sabe exatamente a role_id
-
-    Return: Role
-    """
     return await get_or_404(session, role_id)
 
 
@@ -28,12 +23,6 @@ async def get_user_role(session, user_role_id: UUID) -> Role:
 
 
 async def get_role_id(session: AsyncSession, permission: str) -> UUID:
-    """
-    Quando o role_id ainda é desconhecido
-
-    returns: 
-    role_id -> str
-    """
     role = await crud_role.get_role_by_permission(
         session, 
         permission

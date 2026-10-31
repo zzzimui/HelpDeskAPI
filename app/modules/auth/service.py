@@ -26,11 +26,13 @@ async def decode_token(session: SessionDep, token: TokenDep) -> User:
         )
         token_data = TokenPayload(**payload)
     except (InvalidTokenError, ValidationError):
-        # TROCAR ESSE ERRO POR OUTRO, POIS ELE VALIDA APENAS EMAIL
+        # replace this exception with another one
+        # as it only validates email address
         raise InvalidCredentialsError()
 
     if not token_data.sub:
-        # TROCAR ESSE ERRO POR OUTRO, POIS ELE VALIDA APENAS EMAIL
+        # replace this exception with another one
+        # as it only validates email address
         raise InvalidCredentialsError()
 
     user_id = token_data.sub

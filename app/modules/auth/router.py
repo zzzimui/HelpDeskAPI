@@ -3,12 +3,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 
 from app.modules.auth import service
-from app.modules.auth.deps import SessionDep, CurrentActiveUser
+from app.modules.auth.deps import SessionDep
 from app.modules.auth.schema import TokenPair
 from app.modules.refresh_tokens.schema import RefreshTokenRequest
 
 from app.modules.users.schema import UserCreate
-from app.modules.users.schema import UserPublic
 from app.modules.users.service import create_user
 
 from app.modules.refresh_tokens.service import refresh, revoke

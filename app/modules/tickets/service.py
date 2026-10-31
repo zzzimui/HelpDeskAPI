@@ -129,14 +129,6 @@ async def generate_ticket(
 
     await crud_ticket.create_ticket(db, obj_in_data=obj_data)
 
-    # await generate_ticket_event(
-    #     db,
-    #     user,
-    #     ticket_id=obj_data.get("id"),
-    #     action="CREATED",
-    #     current_ticket_state={"status": None},
-    #     new_state={"status": "OPEN"}
-    # )
     await generate_ticket_event(
         db,
         user,
@@ -195,15 +187,13 @@ async def list_tickets(
 
     queries = []
 
-    # Extrai apenas os campos preenchidos no schema Pydantic
+    # Extract only the fields filled in the Pydantic schema
     selected_filter = filter.model_dump(exclude_none=True)
 
     if role_user.permission.name == "CUSTOMER":
-        # retorne ticket(x) somente se ele pertencer a esse usuário
         queries.append(crud_ticket.model.customer_id == user.id)
 
     elif role_user.permission.name == "AGENT":
-        # retorna ticket(x) apenas se tcket(x) for atribuido à ele
         queries.append(crud_ticket.model.assigned_agent_id == user.id)
 
     return await crud_ticket.get_multi(

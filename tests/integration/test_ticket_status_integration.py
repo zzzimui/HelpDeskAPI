@@ -16,8 +16,8 @@ async def test_customer_changes_own_ticket_status(
     hardware_category: Category,
 ) -> None:
     ticket_data = TicketCreate(
-        title="Teste de alteração de status",
-        description="Ticket para testar a alteração de status.",
+        title="Status change test",
+        description="Ticket to test the status change",
         priority=Priority.MEDIUM,
         category_id=hardware_category.id,
     )
@@ -48,7 +48,7 @@ async def test_customer_changes_own_ticket_status(
     assert updated_ticket.status == TicketStatus.IN_PROGRESS
     assert updated_ticket.updated_at is not None
 
-    # Confirma que a alteração foi persistida no banco.
+    # Confirm that the change was persistent in the database.
     await db_session.refresh(ticket)
 
     assert ticket.status == TicketStatus.IN_PROGRESS

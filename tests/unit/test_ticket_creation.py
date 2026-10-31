@@ -10,7 +10,7 @@ from app.modules.tickets.schema import TicketCreate
 
 @pytest.fixture
 def setup_creation(monkeypatch):
-    """Prepara as dependências simuladas para criar um ticket."""
+    """Prepare the mock dependencies to create a ticket"""
 
     user = SimpleNamespace(
         id=uuid4(),

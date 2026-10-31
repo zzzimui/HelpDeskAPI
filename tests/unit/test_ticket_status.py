@@ -25,7 +25,7 @@ from app.modules.users.models import User
 
 @pytest.fixture
 def ticket():
-    """Cria um ticket simulado, sem acessar o banco."""
+    """Creates a simulated ticket without accessing the database."""
     return SimpleNamespace(
         id=uuid4(),
         status=TicketStatus.OPEN,
@@ -36,7 +36,7 @@ def ticket():
 
 @pytest.fixture
 def mock_dependencies(monkeypatch, ticket):
-    """Substitui as dependências externas por simulações."""
+    """Replaces external dependencies with mocks."""
     monkeypatch.setattr(
         ticket_service,
         "get_ticket_or_404",
@@ -89,7 +89,7 @@ async def test_open_ticket_cannot_transition_to_closed(
             target_status=TicketStatus.CLOSED,
         )
 
-    # A atualização no banco não deve acontecer.
+    # The database update should not happen.
     mock_dependencies.assert_not_awaited()
 
 
@@ -190,8 +190,8 @@ async def test_customer_cannot_skip_ticket_status_transition(
     hardware_category: Category,
 ) -> None:
     ticket_data = TicketCreate(
-        title="Teste de transição inválida",
-        description="Ticket para testar uma transição inválida.",
+        title="Invalid transition test",
+        description="Ticket to test an invalid transition.",
         priority=Priority.MEDIUM,
         category_id=hardware_category.id,
     )

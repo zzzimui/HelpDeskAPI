@@ -30,7 +30,7 @@ def setup_update(monkeypatch):
 
     mock_get_ticket = AsyncMock(return_value=ticket)
     mock_category = AsyncMock()
-    mock_snapshot = SimpleNamespace(title="Título antigo")
+    mock_snapshot = SimpleNamespace(title="Old title")
     mock_update_state = AsyncMock()
     mock_history = AsyncMock()
     mock_update = AsyncMock(return_value=ticket)
@@ -75,7 +75,7 @@ async def test_customer_can_update_open_ticket(setup_update):
     result = await ticket_service.update_ticket(
         db=AsyncMock(),
         user=ctx["user"],
-        schema={"title": "Novo título"},
+        schema={"title": "New title"},
         ticket_id=str(ctx["ticket"].id),
     )
 
@@ -99,7 +99,7 @@ async def test_customer_cannot_update_non_open_ticket(setup_update):
         await ticket_service.update_ticket(
             db=AsyncMock(),
             user=ctx["user"],
-            schema={"title": "Novo título"},
+            schema={"title": "New title"},
             ticket_id=str(ctx["ticket"].id),
         )
 

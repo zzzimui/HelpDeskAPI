@@ -20,7 +20,6 @@ password_hash = PasswordHash(
     )
 )
 
-# I need to find a way to make this dynamic
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_PREFIX}/auth/login"
 )

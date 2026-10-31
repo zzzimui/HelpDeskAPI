@@ -24,5 +24,4 @@ class CRUDTicketMessage(CRUDBase[TicketMessage, TicketMessageCreate, TicketMessa
         return db_obj
 
 
-
 crud_ticket_message = CRUDTicketMessage(TicketMessage)

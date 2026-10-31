@@ -33,15 +33,12 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
     SELECTED_DATABASE: Literal["postgres", "sqlite"] = "sqlite" # 
 
-    # Usuario de inicializacao do banco de dados
+    # Database initialization user
     EMAIL_TEST_USER: EmailStr = "test@example.com"
     PASSWORD_TEST_USER: str = "changethis"
 
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
-
-    # Remova o comentário caso o banco de dados seja postgres
-    # from pydantic import PostgresDsn
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

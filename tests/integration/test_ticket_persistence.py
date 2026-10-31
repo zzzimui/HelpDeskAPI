@@ -17,8 +17,8 @@ async def test_ticket_is_persisted_in_postgres(
 ) -> None:
     ticket = Ticket(
         id=uuid4(),
-        title="Computador não liga",
-        description="O computador não liga após a inicialização.",
+        title="Computer does not turn on",
+        description="The computer does not turn on after booting",
         status=TicketStatus.OPEN,
         priority=Priority.MEDIUM,
         customer_id=customer_user.id,
@@ -33,7 +33,7 @@ async def test_ticket_is_persisted_in_postgres(
     )
     persisted_ticket = result.scalar_one()
 
-    assert persisted_ticket.title == "Computador não liga"
+    assert persisted_ticket.title == "Computer does not turn on"
     assert persisted_ticket.status == TicketStatus.OPEN
     assert persisted_ticket.priority == Priority.MEDIUM
     assert persisted_ticket.customer_id == customer_user.id

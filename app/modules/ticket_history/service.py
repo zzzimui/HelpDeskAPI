@@ -11,29 +11,6 @@ from app.modules.ticket_history.crud import crud_ticket_history
 from app.utils.datetime import get_naive_utc
 
 
-# def _to_json_safe(value):
-#     if value is None:
-#         return None
-#     if isinstance(value, (UUID, datetime)):
-#         return str(value)
-#     if isinstance(value, Enum):
-#         return value.value
-#     if isinstance(value, dict):
-#         return {k: _to_json_safe(v) for k, v in value.items()}
-#     if isinstance(value, (list, tuple)):
-#         return [_to_json_safe(v) for v in value]
-#     return value
-
-
-# def build_ticket_diff(ticket_state: Ticket, new_value: dict) -> tuple[dict, dict]:
-#     diff_old, diff_new = {}, {}
-#     for key, new_val in new_value.items():
-#         old_val = getattr(ticket_state, key)
-#         if old_val != new_val:
-#             diff_old[key] = _to_json_safe(old_val)
-#             diff_new[key] = _to_json_safe(new_val)
-#     return diff_old, diff_new
-
 def build_ticket_diff(current_ticket: Ticket, new_state: dict) -> tuple[dict, dict]:
     diff_old, diff_new = {}, {}
 
@@ -44,18 +21,6 @@ def build_ticket_diff(current_ticket: Ticket, new_state: dict) -> tuple[dict, di
             diff_new[key] = new_val
     return diff_old, diff_new
 
-
-# async def generate_ticket_event(
-#     db: AsyncSession,
-#     user: User, # The user responsible for the event
-#     *,
-#     ticket_id: UUID,
-#     # event
-#     action: str,
-#     current_ticket: Ticket,
-#     new_state: dict[str, Any]
-
-# ) -> TicketHistory:
 async def generate_ticket_event(
     db: AsyncSession,
     user: User,

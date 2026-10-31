@@ -1,9 +1,4 @@
-# Hub-and-Spoke design pattern
-
-# I'm not sure if this file should be named 'migrations'
-# but I'll leave it like that for now
-
-# 1. Imports the original base
+# Imports the original base
 from app.database.base_class import Base  
 
 from app.modules.categories.models import Category

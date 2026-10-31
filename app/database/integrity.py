@@ -10,22 +10,19 @@ def translate_integrity_error(
     exc: IntegrityError,
 ):
     """
-    Converte um IntegrityError do SQLAlchemy em uma
-    exceção específica da aplicação.
+    Convert a SQLAlchemy IntegrityError to a
+    application specific exception
     """
 
     original_error = exc.orig
     message = str(original_error)
 
-    # SQLite:
-    # UNIQUE constraint failed: users.username
     match = re.search(
         r"UNIQUE constraint failed: ([^.]+)\.([^\s]+)",
         message,
     )
 
     if match:
-        # table = match.group(1)
         column = match.group(2)
 
         return DuplicateAttributeError(

@@ -19,8 +19,8 @@ async def test_customer_creates_ticket_and_history(
     hardware_category: Category,
 ) -> None:
     ticket_data = TicketCreate(
-        title="Computador não liga",
-        description="O computador não liga após a inicialização.",
+        title="Computer does not turn on",
+        description="The computer does not turn on after booting",
         priority=Priority.MEDIUM,
         category_id=hardware_category.id,
     )
@@ -39,13 +39,13 @@ async def test_customer_creates_ticket_and_history(
     result = await db_session.execute(
         select(Ticket).where(
             Ticket.customer_id == customer_user.id,
-            Ticket.title == "Computador não liga",
+            Ticket.title == "Computer does not turn on",
         )
     )
     persisted_ticket = result.scalar_one()
 
     assert persisted_ticket.description == (
-        "O computador não liga após a inicialização."
+        "The computer does not turn on after booting"
     )
     assert persisted_ticket.priority == Priority.MEDIUM
     assert persisted_ticket.status == TicketStatus.OPEN
@@ -74,7 +74,7 @@ async def test_customer_cannot_change_ticket_status(
 ) -> None:
     ticket_data = TicketCreate(
         title="Computador não liga",
-        description="O computador não liga após a inicialização.",
+        description="The computer does not turn on after booting",
         priority="medium",
         category_id=hardware_category.id,
     )
@@ -84,6 +84,3 @@ async def test_customer_cannot_change_ticket_status(
         user=customer_user,
         ticket=ticket_data,
     )
-
-    # Obtenha o ticket criado antes de chamar change_status().
-    # A consulta abaixo pode ser usada para recuperá-lo.

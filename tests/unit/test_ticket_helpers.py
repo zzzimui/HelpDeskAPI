@@ -12,7 +12,7 @@ import app.modules.tickets.service as ticket_service
 def test_snapshot_ticket_creates_independent_copy(monkeypatch):
     ticket = SimpleNamespace(
         id="ticket-123",
-        title="Problema de acesso",
+        title="Access problem",
         status="OPEN",
     )
 

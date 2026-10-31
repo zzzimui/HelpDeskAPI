@@ -7,7 +7,6 @@ from sqlalchemy import select
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     async def register_user(self, db: AsyncSession, obj_in: dict) -> (User|None):
-        # Instantiate the SQLAlchemy model by unpacking the dictionary
         db_obj = self.model(**obj_in)
         
         db.add(db_obj)
@@ -31,5 +30,5 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
         return db_obj
 
-# Singleton instance to be imported into services
+
 crud_user = CRUDUser(User)
