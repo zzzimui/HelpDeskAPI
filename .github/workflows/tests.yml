@@ -44,6 +44,8 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --locked
+        
+      - run: uv sync --locked --all-groups --all-extras
 
       - name: Apply database migrations
         run: uv run alembic upgrade head
