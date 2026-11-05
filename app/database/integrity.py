@@ -2,7 +2,7 @@ import re
 
 from sqlalchemy.exc import IntegrityError
 
-from app.exceptions.database import DatabaseIntegrityError
+from app.exceptions.database import DatabaseIntegrityError, ForeignKeyViolationError
 from app.exceptions.common import DuplicateAttributeError
 
 
@@ -16,6 +16,9 @@ def translate_integrity_error(
 
     original_error = exc.orig
     message = str(original_error)
+
+    if getattr(original_error, "sqlstate", None) == "23503":
+        return ForeignKeyViolationError()
 
     match = re.search(
         r"UNIQUE constraint failed: ([^.]+)\.([^\s]+)",

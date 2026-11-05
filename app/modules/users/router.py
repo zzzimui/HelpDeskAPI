@@ -58,11 +58,18 @@ async def edit_profile(
 ):
     return await service.update_user(session, user, update_schema)
 
+@router.patch("/deactivate-profile", status_code=201)
+async def deactivate_profile(
+    session: SessionDep,
+    user: CurrentActiveUser,
+):
+    return await service.deactivate_user(session, user)
+
 
 # region POST
 # ── POST ──────────────────────────────────────────────────────────────
 
-@router.post("/delete-profile", response_model=UserPublic, status_code=201)
+@router.post("/delete-profile", status_code=204)
 async def delete_profile(
     session: SessionDep,
     user: CurrentActiveUser, 
@@ -112,7 +119,7 @@ async def change_role(
 
 
 @router.patch(
-    "{user_id}/status", 
+    "/{user_id}/status",
     summary="admin enables/disables user",
     description="admin enables/disables user",
     status_code=201
@@ -124,5 +131,4 @@ async def change_user_status(
     status: str
 ) -> dict:
     return await service.change_user_status(session, user_id, status)
-
 

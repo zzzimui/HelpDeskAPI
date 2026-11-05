@@ -7,3 +7,12 @@ class DatabaseIntegrityError(AppModuleException):
             status_code=500,
             code="DATABASE_INTEGRITY_ERROR",
         )
+
+
+class ForeignKeyViolationError(AppModuleException):
+    def __init__(self):
+        super().__init__(
+            message="The operation cannot be completed because related records exist",
+            status_code=409,
+            code="FOREIGN_KEY_VIOLATION",
+        )

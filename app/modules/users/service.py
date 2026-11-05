@@ -6,8 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
 from app.exceptions.common import DuplicateAttributeError
+from app.exceptions.database import ForeignKeyViolationError
 from app.modules.users.exceptions import (
     InvalidValueError,
+    UserHasAssociatedRecordsError,
     UserNotFoundError
 )
 
@@ -156,6 +158,11 @@ async def update_user(session: AsyncSession, user: User, update_schema: UserUpda
     
     return await crud_user.update(session, db_obj=user, obj_in=user_data)
 
+
+async def deactivate_user(session: AsyncSession, user: User):
+    return await crud_user.update(session, db_obj=user, obj_in={"is_active": False})
+
+
 # ── END oF update functions ──────────────────────────────────────────────────────────────
 
 
@@ -163,6 +170,14 @@ async def update_user(session: AsyncSession, user: User, update_schema: UserUpda
 # ── read functions ──────────────────────────────────────────────────────────────
 
 async def delete_user(session: AsyncSession, user: User):
-    return await crud_user.remove(db=session, id=user.id)
+    has_associated_records = await crud_user.check_associated_records(session, user)
+    if has_associated_records:
+        raise UserHasAssociatedRecordsError()
+
+    # Is there no associated records?
+    try:
+        return await crud_user.remove(db=session, id=user.id)
+    except ForeignKeyViolationError as exc:
+        raise UserHasAssociatedRecordsError() from exc
 
 # ── END of delete functions ──────────────────────────────────────────────────────────────

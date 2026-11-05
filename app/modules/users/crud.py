@@ -3,7 +3,12 @@ from app.modules.users.schema import UserCreate, UserUpdate
 from app.database.base_crud import CRUDBase
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sqlalchemy import select
+from sqlalchemy import select, exists, or_, select
+
+from app.modules.ticket_history.models import TicketHistory
+from app.modules.ticket_messages.models import TicketMessage
+from app.modules.tickets.models import Ticket
+
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     async def register_user(self, db: AsyncSession, obj_in: dict) -> (User|None):
@@ -29,6 +34,21 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         await db.refresh(db_obj)
 
         return db_obj
+
+    async def check_associated_records(self, db: AsyncSession, user: User):
+        return await db.scalar(
+            select(
+                or_(
+                    # has ticket?
+                    exists().where(Ticket.customer_id == user.id),
+                    exists().where(Ticket.assigned_agent_id == user.id),
+                    # has message?
+                    exists().where(TicketMessage.author_id == user.id),
+                    # has history?
+                    exists().where(TicketHistory.user_id == user.id),
+                )
+            )
+        )
 
 
 crud_user = CRUDUser(User)

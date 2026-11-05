@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from app.modules.roles.models import Role
+from app.modules.refresh_tokens.models import RefreshToken
 from app.database.base_class import Base
 from app.utils.datetime import get_utc
 
@@ -27,6 +28,12 @@ class User(Base):
 
     role_id: Mapped[UUID] = mapped_column(ForeignKey("roles.id"), index=True, nullable=False)
     role: Mapped[Role] = relationship()
+
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
 
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     is_superuser: Mapped[bool] = mapped_column(default=False, nullable=False)

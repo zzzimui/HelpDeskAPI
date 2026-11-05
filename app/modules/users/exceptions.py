@@ -41,6 +41,19 @@ class UserNotFoundError(AppModuleException):
             code="USER_NOT_FOUND"
         )
 
+
+class UserHasAssociatedRecordsError(AppModuleException):
+    def __init__(self):
+        super().__init__(
+            message=(
+                "This user cannot be deleted because support records are associated "
+                "with the account. Deactivate the account instead."
+            ),
+            status_code=409,
+            code="USER_HAS_ASSOCIATED_RECORDS",
+        )
+
+
 class InactiveUserError(AppModuleException):
     def __init__(self):
         super().__init__(

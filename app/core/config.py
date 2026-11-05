@@ -3,9 +3,7 @@ from typing import Literal
 from pydantic import (
     EmailStr, 
     PostgresDsn,
-    computed_field,
     field_validator,
-    model_validator
 )
 
 from pydantic_settings import BaseSettings, SettingsConfigDict

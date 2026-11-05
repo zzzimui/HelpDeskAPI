@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import insert
 
 # revision identifiers, used by Alembic.
 revision: str = "7a91d2c4e6f0"
@@ -28,22 +29,25 @@ def upgrade() -> None:
         ),
     )
 
-    op.bulk_insert(
-        roles_table,
-        [
-            {
-                "id": "89ba3d7f-42c1-4a65-9f20-1b6e8d3c5a70",
-                "permission": "CUSTOMER",
-            },
-            {
-                "id": "4e2c8a61-7d35-4b90-a1f6-3c9e5d2b7a84",
-                "permission": "AGENT",
-            },
-            {
-                "id": "0f6d2b9a-5c31-4e87-b4a2-8d1f6c3e9b50",
-                "permission": "ADMIN",
-            },
-        ],
+    op.get_bind().execute(
+        insert(roles_table)
+        .values(
+            [
+                {
+                    "id": "89ba3d7f-42c1-4a65-9f20-1b6e8d3c5a70",
+                    "permission": "CUSTOMER",
+                },
+                {
+                    "id": "4e2c8a61-7d35-4b90-a1f6-3c9e5d2b7a84",
+                    "permission": "AGENT",
+                },
+                {
+                    "id": "0f6d2b9a-5c31-4e87-b4a2-8d1f6c3e9b50",
+                    "permission": "ADMIN",
+                },
+            ]
+        )
+        .on_conflict_do_nothing(index_elements=["permission"])
     )
 
 
