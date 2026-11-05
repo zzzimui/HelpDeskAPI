@@ -109,6 +109,49 @@ A documentação interativa da API fica disponível, por padrão, em:
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - ReDoc: `http://127.0.0.1:8000/redoc`
 
+## Executando com Docker
+
+É necessário ter o Docker instalado e em execução. Na raiz do projeto, crie ou
+confirme a existência de um arquivo `.env` com as variáveis exigidas pela
+aplicação:
+
+```env
+DATABASE_URL=postgresql://helpdesk_user:helpdesk_password@db:5432/helpdesk
+PROJECT_NAME=Help Desk API
+PROJECT_DESCRIPTION=API para gerenciamento de chamados
+SECRET_KEY=gere-uma-chave-secreta-para-o-seu-ambiente
+FIRST_SUPERUSER=admin@example.com
+FIRST_SUPERUSER_PASSWORD=defina-uma-senha-segura
+```
+
+O `compose.yaml` substitui `DATABASE_URL` dentro dos containers para conectar
+ao serviço do banco. Use chaves e senhas próprias, especialmente fora do
+ambiente local, e não versione o arquivo `.env`.
+
+Inicie os serviços a partir da raiz do projeto:
+
+```bash
+docker compose up --build -d
+```
+
+O Compose inicia o PostgreSQL, aguarda o banco ficar disponível e aplica as
+migrations antes de iniciar a API. Acompanhe a inicialização com:
+
+```bash
+docker compose logs -f
+```
+
+Quando os serviços estiverem prontos, acesse a documentação interativa em
+`http://127.0.0.1:8000/docs` ou `http://127.0.0.1:8000/redoc`. Para parar os
+containers sem remover os dados do banco:
+
+```bash
+docker compose down
+```
+
+Os dados do PostgreSQL ficam no volume `postgres_data` e são mantidos ao parar
+os serviços. Para removê-los também, use `docker compose down -v`.
+
 ## Testes
 
 Execute a suíte de testes:

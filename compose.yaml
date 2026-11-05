@@ -19,6 +19,8 @@ services:
   db:
     image: postgres:16
     container_name: helpdesk-db
+    ports:
+      - "5433:5432"          # host:container
     environment:
       POSTGRES_USER: helpdesk_user
       POSTGRES_PASSWORD: helpdesk_password
