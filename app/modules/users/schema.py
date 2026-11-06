@@ -32,8 +32,8 @@ class UserCreate(BaseModel):
     # username: str | None = Field(default=None, max_length=50)
 
 class UserUpdate(BaseUser):
-    email: EmailStr | None = Field(max_length=255)
-    password: str | None = Field(max_length=128)
+    email: EmailStr | None = Field(default=None, max_length=255)
+    password: str | None = Field(default=None, max_length=128)
     username: str | None = Field(default=None, max_length=50)
 
 class UserPublic(BaseModel):

@@ -11,6 +11,9 @@ from app.modules.refresh_tokens.exceptions import InvalidRefreshTokenError
 from jwt.exceptions import InvalidTokenError
 
 # Core
+from app.modules.refresh_tokens.crud import crud_refresh_tokens
+
+# Core
 from app.core import security
 from app.core.config import settings
 
@@ -123,12 +126,23 @@ async def refresh(db: AsyncSession, token: str) -> TokenPair:
     )
 
 async def revoke(db: AsyncSession, token: str) -> None:
-    refresh_obj = await db.scalar(
-        select(RefreshToken).where(
-            RefreshToken.token_hash == security.hash_token(token),
-        )
+    # refresh_obj = await db.scalar(
+    #     select(RefreshToken).where(
+    #         RefreshToken.token_hash == security.hash_token(token),
+    #     )
+    # )
+    token_hash_in = security.hash_token(token)
+    refresh_obj = await crud_refresh_tokens.compare_refresh_tokens(
+        db, 
+        token_hash_in
     )
+    # revoked_schema = RefreshTokenRevoked(refresh_obj.revoked_at)
 
-    if refresh_obj is not None and refresh_obj.revoked_at is None:
+    if refresh_obj and refresh_obj.revoked_at is None:
         refresh_obj.revoked_at = get_utc()
-        await db.commit()
+
+        await crud_refresh_tokens.update(
+            db, 
+            db_obj=refresh_obj, 
+            obj_in={"revoked_at": refresh_obj.revoked_at}
+        )

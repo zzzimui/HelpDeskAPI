@@ -39,7 +39,10 @@ async def login_access_token(
     )
 
 @router.post("/refresh")
-async def refresh_token(session: SessionDep, token: RefreshTokenRequest) -> TokenPair:
+async def refresh_token(
+    session: SessionDep, 
+    token: RefreshTokenRequest
+) -> TokenPair:
     return await refresh(session, token.refresh_token)
 
 @router.post(
