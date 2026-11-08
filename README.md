@@ -1,5 +1,7 @@
 # Help Desk API
 
+![HelpDesk screenshot](helpdesk_hero.jpg)
+
 API REST para gerenciamento de chamados de suporte técnico, desenvolvida com Python e FastAPI. O projeto busca aplicar boas práticas de desenvolvimento backend, organização por módulos, persistência relacional e testes automatizados.
 
 ## Tecnologias
