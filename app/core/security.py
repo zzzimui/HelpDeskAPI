@@ -24,7 +24,7 @@ reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_PREFIX}/auth/login"
 )
 
-REFRESH_SECRET_KEY = "changethis"
+REFRESH_SECRET_KEY = "4bbac27f-e61f-45ba-bd96-4a429b6940cc" # change this
 ALGORITHM = "HS256"
 
 
